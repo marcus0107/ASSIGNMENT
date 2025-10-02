@@ -1,0 +1,259 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+class Book {
+private:
+    string title;
+    string author;
+    string isbn;
+    booK isBorrowed;
+
+public:
+   
+    Book(string t, string a, string i) : title(t), author(a), isbn(i), isBorrowed(false) {}
+    
+ 
+    string getTitle() const { return title; }
+    string getAuthor() const { return author; }
+    string getISBN() const { return isbn; }
+    bool getBorrowedStatus() const { return isBorrowed; }
+    
+    
+    void setBorrowedStatus(bool status) { isBorrowed = status; }
+    
+
+    bool matchesSearch(const string& searchTerm) const {
+        return title.find(searchTerm) != string::npos || 
+               author.find(searchTerm) != string::npos || 
+               isbn.find(searchTerm) != string::npos;
+    }
+    
+   
+    void displayInfo() const {
+        cout << title << " by " << author << " (ISBN: " << isbn << ") - " 
+             << (isBorrowed ? "Borrowed" : "Available") << endl;
+    }
+};
+
+class User {
+private:
+    string name;
+    int userId;
+    vector<string> borrowedBooks; // Track borrowed book ISBNs
+
+public:
+    User(string n, int id) : name(n), userId(id) {}
+    
+   
+    string getName() const { return name; }
+    int getUserId() const { return userId; }
+    
+    booK borrowBook(const string& isbn) {
+       
+        if (find(borrowedBooks.begin(), borrowedBooks.end(), isbn) != borrowedBooks.end()) {
+            return false;
+        }
+        borrowedBooks.push_back(isbn);
+        return true;
+    }
+    
+    booK returnBook(const string& isbn) {
+        auto it = find(borrowedBooks.begin(), borrowedBooks.end(), isbn);
+        if (it != borrowedBooks.end()) {
+            borrowedBooks.erase(it);
+            return true;
+        }
+        return false;
+    }
+    
+   
+    void displayInfo() const {
+        cout << name << " (ID: " << userId << ") - Borrowed: " << borrowedBooks.size() << " books" << endl;
+    }
+};
+
+class Library {
+private:
+    vector<Book*> books;   
+    vector<User*> users;    
+
+public:
+    Library() {}
+    
+    ~Library() {
+        for (auto book : books) delete book;
+        for (auto user : users) delete user;
+    }
+
+
+    void addBook(string title, string author, string isbn) {
+      
+        for (auto book : books) {
+            if (book->getISBN() == isbn) {
+                cout << "Error: Book already exists!" << endl;
+                return;
+            }
+        }
+        books.push_back(new Book(title, author, isbn));
+        cout << "Book added: " << title << endl;
+    }
+
+   
+    void addUser(string name, int id) {
+       
+        for (auto user : users) {
+            if (user->getUserId() == id) {
+                cout << "Error: User ID already exists!" << endl;
+                return;
+            }
+        }
+        users.push_back(new User(name, id));
+        cout << "User added: " << name << endl;
+    }
+
+   
+    void displayAllBooks() const {
+        cout << "\n=== LIBRARY BOOKS ===" << endl;
+        for (auto book : books) {
+            book->displayInfo();
+        }
+    }
+
+   
+    void displayAllUsers() const {
+        cout << "\n=== LIBRARY USERS ===" << endl;
+        for (auto user : users) {
+            user->displayInfo();
+        }
+    }
+
+   
+    void searchBooks(const string& searchTerm) const {
+        cout << "\n=== SEARCH RESULTS ===" << endl;
+        bool found = false;
+        for (auto book : books) {
+            if (book->matchesSearch(searchTerm)) {
+                book->displayInfo();
+                found = true;
+            }
+        }
+        if (!found) {
+            cout << "No books found." << endl;
+        }
+    }
+
+   
+    void borrowBook(int userId, string isbn) {
+        User* foundUser = nullptr;
+        Book* foundBook = nullptr;
+        
+    
+        for (auto u : users) {
+            if (u->getUserId() == userId) {
+                foundUser = u;
+                break;
+            }
+        }
+        
+     
+        for (auto b : books) {
+            if (b->getISBN() == isbn) {
+                foundBook = b;
+                break;
+            }
+        }
+        
+       
+        if (!foundUser) {
+            cout << "Error: User not found!" << endl;
+            return;
+        }
+        
+        if (!foundBook) {
+            cout << "Error: Book not found!" << endl;
+            return;
+        }
+        
+        if (foundBook->getBorrowedStatus()) {
+            cout << "Error: Book already borrowed!" << endl;
+            return;
+        }
+        
+       
+        if (foundUser->borrowBook(isbn)) {
+            foundBook->setBorrowedStatus(true);
+            cout << foundUser->getName() << " borrowed " << foundBook->getTitle() << endl;
+        }
+    }
+
+    
+    void returnBook(int userId, string isbn) {
+        User* foundUser = nullptr;
+        Book* foundBook = nullptr;
+    
+        for (auto u : users) {
+            if (u->getUserId() == userId) {
+                foundUser = u;
+                break;
+            }
+        }
+        
+        for (auto b : books) {
+            if (b->getISBN() == isbn) {
+                foundBook = b;
+                break;
+            }
+        }
+        
+        
+        if (!foundUser || !foundBook) {
+            cout << "Error: User or book not found!" << endl;
+            return;
+        }
+        
+       
+        if (foundUser->returnBook(isbn)) {
+            foundBook->setBorrowedStatus(false);
+            cout << foundUser->getName() << " returned " << foundBook->getTitle() << endl;
+        } else {
+            cout << "Error: User didn't borrow this book!" << endl;
+        }
+    }
+};
+
+int main() {
+    Library lib;
+    
+   
+    lib.addBook("C++ Programming", "Sheril Okwiri", "111");
+    lib.addBook("Data Structures", "Maria Akinyi", "222");
+    lib.addBook("Algorithms", "Okoth Dunkan", "333");
+    
+   
+    lib.addUser("Kimutai Ken", 1);
+    lib.addUser("Otieno Keneddy", 2);
+    lib.addUser("Akinyi sweeta", 3);
+    
+  
+    lib.displayAllBooks();
+    lib.displayAllUsers();
+    
+   
+    lib.borrowBook(1, "111");  // Kimutai borrows C++ book
+    lib.borrowBook(2, "222");  // Otieno borrows Data Structures
+    
+  
+    lib.displayAllBooks();
+    
+  
+    lib.returnBook(1, "111"); 
+    lib.returnBook(2, "222");  
+    
+   
+    lib.searchBooks("C++");
+    lib.searchBooks("Okoth");
+    
+    return 0;
+}
